@@ -1,3 +1,7 @@
+# User entered
+credentials/creds.json
+credentials/token.pickle
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
