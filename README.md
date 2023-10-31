@@ -23,6 +23,24 @@ The Price Alert System provides a convenient way for cryptocurrency enthusiasts 
    - Enter a name for the service account, choose "JSON" as the key type, and click "Create".
    - Save the resulting JSON file in `./credentials` and rename it into `creds.json` secure location.
 
+## Telegram integration
+
+1. Create a Telegram Bot & Get the Token
+   * Open your **Telegram** application.
+   * Search for `@BotFather` in the search bar (it is a bot provided by Telegram).
+   * Start a chat with BotFather by clicking `Start`.
+   * Create a **new bot** by sending the following command to **BotFather**: `/newbot`.
+   * **BotFather** will ask you to provide a name for your bot. After you answer, it will ask for a username as well. The username must end in `bot`. For example, “MyTestBot” or “my_test_bot”.
+   * After completing the bot creation, **BotFather** will provide you with your bot's token. This `token` is a string that looks something like `123456789:AAG90e14-0f8-40183D-18491dDE`.
+   * Copy this token and keep it secure. Never share it with anyone.
+2. Find Your Chat or Group ID
+   * If you haven't done so already during the bot creation process, search for your bot on Telegram (by the username you provided) and start a conversation with it by clicking `Start`.
+   * If you want to send messages to a group, add the bot to the group.
+   * To get your chat or group ID, use any web browser to navigate to the following URL: https://api.telegram.org/bot<YourBOTToken>/getUpdates (replace <YourBOTToken> with the token you received from BotFather).
+   * Send a message to the bot or group. You don't have to do this every time, just once to make it appear in the update's page.
+   * Refresh the page, and you'll see an array of all your bot’s interactions. Look for the "chat" object in the array; within it, you can find `id`. This number (might be negative for groups) is your chat or group ID.
+   * Copy this ID for usage in your script.
+
 
 ## How to run it
 I personally recommend it to run it in a virtual environment, as follows:
