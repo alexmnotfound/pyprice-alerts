@@ -1,7 +1,5 @@
-
-
 # Price Alert System
-
+![img.png](img.png)
 ## Purpose
 The Price Alert System is a Python script that enables users to track cryptocurrency prices and receive alerts when the prices reach certain thresholds.
 
