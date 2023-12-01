@@ -11,6 +11,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class SheetsHelper:
     """
     Helper class for working with the Google Sheets API.
@@ -18,7 +19,7 @@ class SheetsHelper:
 
     def __init__(
             self,
-            path: str = os.getenv('CREDENTIALS_PATH', './credentials/'),
+            path: str = os.getenv('CREDENTIALS_PATH', '../credentials/'),
             credentials: str = os.getenv('CREDENTIALS_FILE', 'creds.json'),
             token: str = os.getenv('TOKEN_FILE', 'token.pickle'),
             scopes: List[str] = None):

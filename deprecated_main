@@ -1,5 +1,5 @@
-from helper.telegram import TelegramNotifier
-from helper.google import SheetsHelper
+from helpers.telegram import TelegramNotifier
+from helpers.google import SheetsHelper
 import pandas as pd
 import asyncio
 
@@ -9,6 +9,8 @@ async def main():
         sheet_id = '1YtiY-KXPj3kBhye5QPkAqYnq5uQZpnTk34o_U2Bn10M'
         sheet_range = 'Watchlist!B8:Z'
         telegram_bot_token = "6471360054:AAG1XUUB0NWbAjd2cKzOrKvFeji2qVZ8ifU"
+
+        # Use Group ID {-4066164058} for deployment or personal chat ID for testing {'MR': '808918721'}
         telegram_chat_id = "808918721"
 
         # Initialize the SheetsHelper object
@@ -51,7 +53,7 @@ def format_df(data, style="general"):
     df = df[1:]  # Take the data less the header row
     df.columns = new_header  # Set the header row as the df header
 
-    labels = ['Stop Loss', 'Details', 'Prices of interest', 'Aprox loss', 'Exchange','Stock Name']
+    labels = ['Stop Loss', 'Details', 'Prices of interest', 'Approx loss', 'Exchange', 'Stock Name']
     df.drop(columns=labels, axis=0, inplace=True)
     df.dropna(inplace=True)
 
