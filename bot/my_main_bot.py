@@ -1,13 +1,12 @@
-import logging
-import asyncio
+import logging, asyncio, sys
+import pandas as pd
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from .keyboard_layouts import MAIN_KEYBOARD, RETURN_KEYBOARD, REPORTS_KEYBOARD
-import sys
 
 sys.path.append("..")  # Add the parent directory to sys.path
 from helpers.google import SheetsHelper
-import pandas as pd
+from config.settings import SHEET_ID, SHEET_RANGE
 
 
 class MyMainBot:
@@ -15,8 +14,8 @@ class MyMainBot:
         self.logger = logging.getLogger(__name__)
         self.application = Application.builder().token(token).build()
         self.setup_handlers()
-        self.sheet_id = '1YtiY-KXPj3kBhye5QPkAqYnq5uQZpnTk34o_U2Bn10M'
-        self.sheet_range = 'Watchlist!B8:Z'
+        self.sheet_id = SHEET_ID
+        self.sheet_range = SHEET_RANGE
         # Initialize the SheetsHelper object
         self.sheetsHelper = SheetsHelper()
 
