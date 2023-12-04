@@ -27,58 +27,41 @@ class MyMainBot:
         query = update.callback_query
         await query.answer()
 
-        if query.data == 'get_reports':
+        if query.data in ['get_open_pos', 'get_watchlist', 'get_all_reports']:
+            await self.handle_report_request(context, query, query.data)
+        elif query.data == 'get_reports':
             await query.edit_message_text(text="🤖: Choose which report you want to get.", reply_markup=REPORTS_KEYBOARD)
         elif query.data == 'analyze_trade':
             await query.edit_message_text(text="🤖: Sorry this isn't ready yet", reply_markup=RETURN_KEYBOARD)
-
-        elif query.data == 'get_open_pos':
-            self.logger.info(f"Reading data from range {self.sheet_range} of the Spreadsheet {self.sheet_id}\n")
-            await query.edit_message_text(text="🤖: Retrieving data from Google. Please wait...")
-
-            data = self.sheetsHelper.get_sheet_data(self.sheet_id, self.sheet_range)
-
-            # Create dict with objects to send
-            objects_to_send = dict()
-            objects_to_send["Open Positions"] = format_df(data, style='positions')
-            for title, dataframe in objects_to_send.items():
-                await self.send_dataframe(context, update.effective_chat.id, dataframe, fmt="simple", title=title)
-
-            await query.message.reply_text(text="🤖: Here are your positions pal\nWhat else can I do for you?",
-                                           reply_markup=REPORTS_KEYBOARD)
-        elif query.data == 'get_watchlist':
-            self.logger.info(f"Reading data from range {self.sheet_range} of the Spreadsheet {self.sheet_id}\n")
-            await query.edit_message_text(text="🤖: Retrieving data from Google. Please wait...")
-
-            data = self.sheetsHelper.get_sheet_data(self.sheet_id, self.sheet_range)
-
-            # Create dict with objects to send
-            objects_to_send = dict()
-            objects_to_send["Watchlist"] = format_df(data, style='watchlist')
-            for title, dataframe in objects_to_send.items():
-                await self.send_dataframe(context, update.effective_chat.id, dataframe, fmt="simple", title=title)
-
-            await query.message.reply_text(text="🤖: Here is your Watchlist mate\nWhat else can I do for you?",
-                                           reply_markup=REPORTS_KEYBOARD)
-        elif query.data == 'get_all_reports':
-            self.logger.info(
-                f"Get All Reports: Reading data from range {self.sheet_range} of the Spreadsheet {self.sheet_id}\n")
-            await query.edit_message_text(text="🤖: Retrieving data from Google. Please wait...")
-
-            data = self.sheetsHelper.get_sheet_data(self.sheet_id, self.sheet_range)
-
-            # Create dict with objects to send
-            objects_to_send = dict()
-            objects_to_send["Open Positions"] = format_df(data, style='positions')
-            objects_to_send["Watchlist"] = format_df(data, style='watchlist')
-
-            for title, dataframe in objects_to_send.items():
-                await self.send_dataframe(context, update.effective_chat.id, dataframe, fmt="simple", title=title)
-
-            await query.message.reply_text(text="🤖: There you go, you unsaciable beast\nWhat else can I do for you?",
-                                           reply_markup=REPORTS_KEYBOARD)
         elif query.data == 'return':
             await query.edit_message_text('🤖: What else can I do for you?', reply_markup=MAIN_KEYBOARD)
+
+    async def handle_report_request(self, context, query, report_type):
+        self.logger.info(f"Reading data from range {self.sheet_range} of the Spreadsheet {self.sheet_id}\n")
+        await query.edit_message_text(text="🤖: Retrieving data from Google. Please wait...")
+
+        data = self.sheetsHelper.get_sheet_data(self.sheet_id, self.sheet_range)
+
+        # Process data based on report_type
+        objects_to_send = {
+            "Open Positions": format_df(data, style='positions') if report_type in ['get_open_pos', 'get_all_reports'] else None,
+            "Watchlist": format_df(data, style='watchlist') if report_type in ['get_watchlist', 'get_all_reports'] else None
+        }
+
+        # Send data
+        for title, dataframe in objects_to_send.items():
+            if dataframe is not None:
+                await self.send_dataframe(context, query.message.chat_id, dataframe, fmt="simple", title=title)
+
+        # Follow-up message
+        follow_up_text = {
+            'get_open_pos': "Here are your positions pal",
+            'get_watchlist': "Here is your Watchlist mate",
+            'get_all_reports': "There you go, you insatiable beast",
+        }.get(report_type, "What else can I do for you?")
+
+        await query.message.reply_text(text=f"🤖: {follow_up_text}\nWhat else can I do for you?", reply_markup=REPORTS_KEYBOARD)
+
 
     def setup_handlers(self):
         self.application.add_handler(CommandHandler('start', self.start))
