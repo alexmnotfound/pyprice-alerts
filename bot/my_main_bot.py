@@ -1,10 +1,11 @@
-import logging, asyncio, sys
+import sys
+
+sys.path.append("..")  # Add the parent directory to sys.path
+import logging, asyncio
 import pandas as pd
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from .keyboard_layouts import MAIN_KEYBOARD, RETURN_KEYBOARD, REPORTS_KEYBOARD
-
-sys.path.append("..")  # Add the parent directory to sys.path
 from helpers.google import SheetsHelper
 from config.settings import SHEET_ID, SHEET_RANGE
 
@@ -25,67 +26,95 @@ class MyMainBot:
 
     async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
-        await query.answer()
+        try:
+            await query.answer()
 
-        if query.data in ['get_open_pos', 'get_watchlist', 'get_all_reports']:
-            await self.handle_report_request(context, query, query.data)
-        elif query.data == 'get_reports':
-            await query.edit_message_text(text="🤖: Choose which report you want to get.", reply_markup=REPORTS_KEYBOARD)
-        elif query.data == 'analyze_trade':
-            await query.edit_message_text(text="🤖: Sorry this isn't ready yet", reply_markup=RETURN_KEYBOARD)
-        elif query.data == 'return':
-            await query.edit_message_text('🤖: What else can I do for you?', reply_markup=MAIN_KEYBOARD)
+            if query.data in ['get_open_pos', 'get_watchlist', 'get_all_reports']:
+                await self.handle_report_request(context, query, query.data)
+            elif query.data == 'get_reports':
+                await query.edit_message_text(text="🤖: Choose which report you want to get.",
+                                              reply_markup=REPORTS_KEYBOARD)
+            elif query.data == 'analyze_trade':
+                await query.edit_message_text(text="🤖: Sorry this isn't ready yet",
+                                              reply_markup=RETURN_KEYBOARD)
+            elif query.data == 'return':
+                await query.edit_message_text(text='🤖: What else can I do for you?',
+                                              reply_markup=MAIN_KEYBOARD)
+        except Exception as e:
+            self.logger.error(f"Something failed while processing: {e}")
+            await query.edit_message_text(text='⚠️ Sorry but something failed while processing query.\n'
+                                               '🤖: What else can I do for you?',
+                                          reply_markup=MAIN_KEYBOARD)
 
     async def handle_report_request(self, context, query, report_type):
         self.logger.info(f"Reading data from range {self.sheet_range} of the Spreadsheet {self.sheet_id}\n")
         await query.edit_message_text(text="🤖: Retrieving data from Google. Please wait...")
 
-        data = self.sheetsHelper.get_sheet_data(self.sheet_id, self.sheet_range)
+        try:
+            data = self.sheetsHelper.get_sheet_data(self.sheet_id, self.sheet_range)
 
-        # Process data based on report_type
-        objects_to_send = {
-            "Open Positions": format_df(data, style='positions') if report_type in ['get_open_pos', 'get_all_reports'] else None,
-            "Watchlist": format_df(data, style='watchlist') if report_type in ['get_watchlist', 'get_all_reports'] else None
-        }
+            # Process data based on report_type
+            objects_to_send = {
+                "Open Positions": format_df(data, style='positions') if report_type in ['get_open_pos',
+                                                                                        'get_all_reports'] else None,
+                "Watchlist": format_df(data, style='watchlist') if report_type in ['get_watchlist',
+                                                                                   'get_all_reports'] else None
+            }
 
-        # Send data
-        for title, dataframe in objects_to_send.items():
-            if dataframe is not None:
-                await self.send_dataframe(context, query.message.chat_id, dataframe, fmt="simple", title=title)
+            # Send data
+            for title, dataframe in objects_to_send.items():
+                if dataframe is not None:
+                    await send_dataframe(context, query.message.chat_id, dataframe, fmt="simple", title=title)
 
-        # Follow-up message
-        follow_up_text = {
-            'get_open_pos': "Here are your positions pal",
-            'get_watchlist': "Here is your Watchlist mate",
-            'get_all_reports': "There you go, you insatiable beast",
-        }.get(report_type, "What else can I do for you?")
+            # Follow-up message
+            follow_up_text = {
+                'get_open_pos': "Here are your positions pal",
+                'get_watchlist': "Here is your Watchlist mate",
+                'get_all_reports': "There you go, you insatiable beast",
+            }.get(report_type, "What else can I do for you?")
 
-        await query.message.reply_text(text=f"🤖: {follow_up_text}\nWhat else can I do for you?", reply_markup=REPORTS_KEYBOARD)
-
-
+            await query.message.reply_text(text=f"🤖: {follow_up_text}\nWhat else can I do for you?",
+                                           reply_markup=REPORTS_KEYBOARD)
+        except Exception as e:
+            self.logger.error(f"Something failed while processing: {e}")
+            await query.edit_message_text(text='⚠️ Sorry but something failed while processing query.\n'
+                                               '🤖: What else can I do for you?',
+                                          reply_markup=REPORTS_KEYBOARD)
+            
     def setup_handlers(self):
         self.application.add_handler(CommandHandler('start', self.start))
         self.application.add_handler(CallbackQueryHandler(self.button))
 
-    async def send_dataframe(self, context, chat_id, dataframe, fmt="simple", title=None):
-        table = dataframe.to_markdown(tablefmt=fmt)
-
-        if title:
-            title_str = f"<b>{title}</b>\n\n"
-        else:
-            title_str = ""
-
-        message = title_str + f"<pre>{table}</pre>"
-
-        # Use context.bot to send the message
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=message,
-            parse_mode='HTML'
-        )
-
     def run(self):
         self.application.run_polling()
+
+
+def escape_chars(s):
+    if s is None:
+        return s  # or return an empty string or some placeholder text as appropriate
+    return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+async def send_dataframe(context, chat_id, dataframe, fmt="simple", title=None):
+
+    if title:
+        title = escape_chars(title)
+        title_str = f"<b>{title}</b>\n\n"
+    else:
+        title_str = ""
+
+    # Apply the escape function to the dataframe content if necessary
+    dataframe = dataframe.applymap(escape_chars)
+
+    table = dataframe.to_markdown(tablefmt=fmt)
+    message = title_str + f"<pre>{table}</pre>"
+
+    # Use context.bot to send the message
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=message,
+        parse_mode='HTML'
+    )
 
 
 def format_df(data, style="general"):
@@ -96,7 +125,7 @@ def format_df(data, style="general"):
     if len(data) < 2:
         raise ValueError("No data available to format")
 
-    # Create Dataframe from data
+    # Create DataFrame from data
     df = pd.DataFrame(data)
 
     new_header = df.iloc[0]  # Grab the first row for the header
@@ -118,5 +147,8 @@ def format_df(data, style="general"):
             df.drop(columns=columns, axis=0, inplace=True)
         case _:
             return df
+
+    # Reset the index without adding a new column
+    df.reset_index(drop=True, inplace=True)
 
     return df
