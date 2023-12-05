@@ -136,11 +136,20 @@ def format_df(data, style="general"):
     df.drop(columns=labels, axis=0, inplace=True)
     df.dropna(inplace=True)
 
+    # Define a function to determine the emoji based on PnL value
+    def pnl_indicator(pnl):
+        try:
+            pnl_value = float(pnl.strip('%'))  # Remove the percentage sign and convert to float
+            return "🟢" if pnl_value > 0 else "🔴" if pnl_value < 0 else "⚪"
+        except ValueError:
+            return "⚪"  # Return a default indicator if conversion fails
+
     match style:
         case "positions":
             df = df[(df['# Shares'] != "")]
-            columns = ['Price', 'Change', '% Change']
-            df.drop(columns=columns, axis=0, inplace=True)
+            df[' - '] = df['PnL'].apply(pnl_indicator)  # Add the PnL Indicator column
+            columns_to_drop = ['Change', '% Change']
+            df.drop(columns=columns_to_drop, inplace=True)
         case "watchlist":
             df = df[(df['# Shares'] == "")]
             columns = ['# Shares', 'Entry', 'Type', 'PnL', 'Value']
@@ -148,7 +157,8 @@ def format_df(data, style="general"):
         case _:
             return df
 
-    # Reset the index without adding a new column
-    df.reset_index(drop=True, inplace=True)
+    # Set new index
+    if 'Symbol' in df.columns:
+        df.set_index('Symbol', inplace=True)
 
     return df
