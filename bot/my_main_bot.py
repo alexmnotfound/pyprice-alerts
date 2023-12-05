@@ -6,7 +6,7 @@ import pandas as pd
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from .keyboard_layouts import MAIN_KEYBOARD, RETURN_KEYBOARD, REPORTS_KEYBOARD
-from helpers.google import SheetsHelper
+from helpers.google_helper import SheetsHelper
 from config.settings import SHEET_ID, SHEET_RANGE
 
 
